@@ -28,7 +28,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-VERSION = "0.1.31"  # 每次更新請遞增最後一碼，並寫進 更新紀錄.txt
+VERSION = "0.1.32"  # 每次更新請遞增最後一碼，並寫進 更新紀錄.txt
 
 CJK = r"一-鿿"
 CJK_RE = re.compile(f"[{CJK}]")
@@ -57,7 +57,8 @@ def _boundary(term):
 
 def _read_rows(path):
     """主詞庫 + 同資料夾的 *術語補充*.csv 一起讀取。"""
-    paths = [Path(path)] + sorted(Path(path).parent.glob("*術語補充*.csv"))
+    extra = sorted(Path(path).parent.glob("*術語補充*.csv"), key=lambda q: (q.name.startswith("個人"), q.name))
+    paths = [Path(path)] + extra   # 個人詞庫最後讀，可以覆蓋共用規則
     for p in paths:
         with open(p, encoding="utf-8-sig", newline="") as f:
             yield from csv.DictReader(f)
@@ -95,7 +96,7 @@ class Vocab:
                 cand = re.sub(r"\s*\(.*?\)", "", en or zh).strip()
                 if cand and cand.isascii() and cand not in self.prompt_en:
                     self.prompt_en.append(cand)
-        self.auto = {k: v for k, v in self.auto.items() if k != v[0].lower()}
+        self.auto = {k: v for k, v in self.auto.items() if k != v[0]}   # 只差大小寫的保留（用來統一寫法）
         if self.auto:
             keys = sorted(self.auto, key=len, reverse=True)
             self.auto_re = re.compile("|".join(_boundary(k) for k in keys), re.I)
@@ -177,6 +178,8 @@ def apply_auto(units, vocab, log):
         i0 = next(i for i in range(len(units)) if offs[i + 1] > a)
         i1 = next(i for i in range(len(units)) if offs[i + 1] >= b)
         right = vocab.auto[m.group(0).lower()][0]
+        if m.group(0) == right:          # 已經是正確寫法
+            continue
         log.append((units[i0][1], m.group(0), right))
         if groups and i0 <= groups[-1][1]:
             groups[-1][1] = max(groups[-1][1], i1)
