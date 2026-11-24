@@ -1,0 +1,25 @@
+# 個人檔案（不上傳，自動更新也不會覆蓋）
+個人*
+使用者設定.json
+subtitle_ai_config.json
+交接文件*.md
+*.srt
+*.review.txt
+字幕/
+字幕輸出/
+_backup/
+
+# 環境
+.venv/
+__pycache__/
+*.pyc
+ffmpeg.exe
+ffprobe.exe
+desktop.ini
+
+# 舊版遺留
+SubtitleAI_Studio.exe
+啟動字幕工具.bat
+打包成exe.bat
+logo_bg.py
+外語翻譯字幕工作流.md
