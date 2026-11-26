@@ -28,7 +28,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-VERSION = "0.1.33"  # 每次更新請遞增最後一碼，並寫進 更新紀錄.txt
+VERSION = "0.1.34"  # 每次更新請遞增最後一碼，並寫進 更新紀錄.txt
 
 CJK = r"一-鿿"
 CJK_RE = re.compile(f"[{CJK}]")
@@ -466,7 +466,7 @@ def _cut_logit(T, i):
     return x
 
 
-_SEG_MU, _SEG_SIG = 9.0, 4.0     # 偏好的每句字數（平均）與寬容度
+_SEG_MU, _SEG_SIG = 10.0, 5.0    # 偏好的每句字數（平均）與寬容度
 
 
 def _dp_segments(chars, cjkw, max_dur):
@@ -544,7 +544,7 @@ def _dp_segments(chars, cjkw, max_dur):
 
 
 
-def build_cues(chars, maxw=30, max_dur=6.5, gap=0.3, lines=1, cjkw=15, cjk_dur=3.0, offset=0.0):
+def build_cues(chars, maxw=30, max_dur=6.5, gap=0.3, lines=1, cjkw=16, cjk_dur=3.0, offset=0.0):
     cues = []
 
     def lim_of(cl):
@@ -997,7 +997,7 @@ def main(argv=None):
     ap.add_argument("--gap", type=float, default=0.3, help="超過幾秒停頓就切句")
     ap.add_argument('--version', action='version', version='字幕工具 v' + VERSION)
     ap.add_argument("--offset", type=float, default=0.2, help="字幕整體延後秒數（預設 0.2；字幕偏早就調大、偏晚就調小或負數）")
-    ap.add_argument("--cjk-width", type=int, default=15, help="含中文的句子每行字數上限（預設 14，依你的剪映習慣：平均約 10 字）")
+    ap.add_argument("--cjk-width", type=int, default=16, help="含中文的句子每行字數上限（預設 16；依使用者親手字幕：平均約 10 字、九成在 15 字內）")
     ap.add_argument("--lines", type=int, default=1, choices=[1, 2], help="每句字幕行數（預設 1，與剪映相同）")
     args = ap.parse_args(argv)
     print('字幕工具 v' + VERSION)

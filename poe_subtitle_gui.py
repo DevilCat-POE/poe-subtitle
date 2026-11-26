@@ -134,7 +134,7 @@ def open_path(p):
 
 
 class Settings(dict):
-    DEFAULTS = {"game": "poe", "model": "large-v3", "lang": "auto", "offset": 0.2, "cjk_width": 15,
+    DEFAULTS = {"game": "poe", "model": "large-v3", "lang": "auto", "offset": 0.2, "cjk_width": 16,
                 "vocab": "", "auto_update": True, "skip_version": "", "geometry": ""}
 
     def __init__(self):
@@ -143,6 +143,10 @@ class Settings(dict):
             self.update(json.loads(SETTINGS_FILE.read_text(encoding="utf-8")))
         except Exception:
             pass
+        if self.get("settings_version", 0) < 1:      # v0.1.34：每句上限預設 15→16（沒自己改過的才跟著改）
+            if self.get("cjk_width") == 15:
+                self["cjk_width"] = 16
+            self["settings_version"] = 1
 
     def save(self):
         try:
@@ -607,7 +611,7 @@ class App(_Root):
             ("offset", "字幕延後", f"{c['offset']:+.2f} 秒", ("字幕延後",
                 "語音辨識的時間通常比聲音早 0.1～0.3 秒\n字幕太早出現 → 調大　太晚 → 調小\n+預設 +0.20 秒")),
             ("cjk", "每句最多字數", f"{int(c['cjk_width'])} 字", ("每句最多字數",
-                "中文字幕一句最多幾個字（單行）\n剪映常見習慣：平均 10 字、最多 15 字\n+預設 15 字")),
+                "中文字幕一句最多幾個字（單行）\n依親手字幕統計：平均 10 字、九成在 15 字內\n+預設 16 字")),
             ("vocab", "詞庫", Path(c["vocab"]).name if c["vocab"] else "（未選擇）", ("詞庫",
                 "遊戲術語、常見錯字對照表\n同資料夾的「…術語補充.csv」也會一起讀取\n+你的個人詞庫也會自動套用")),
         ]
@@ -627,7 +631,7 @@ class App(_Root):
                 elif key == "offset":
                     self.link("off_reset", bx + 200, cy, "還原預設", lambda e: self.set_cfg(offset=0.2), font="xs")
                 else:
-                    self.link("cjk_reset", bx + 200, cy, "還原預設", lambda e: self.set_cfg(cjk_width=15), font="xs")
+                    self.link("cjk_reset", bx + 200, cy, "還原預設", lambda e: self.set_cfg(cjk_width=16), font="xs")
             elif key == "vocab":
                 self.button("sel_vocab", val_x0, y, val_x1 - 120, y + 28,
                             self.fit(val, val_x1 - 120 - val_x0 - 20, "n"), lambda e: self.pick_vocab(), enabled=not dis)
