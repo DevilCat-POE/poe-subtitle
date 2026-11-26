@@ -28,7 +28,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-VERSION = "0.1.32"  # 每次更新請遞增最後一碼，並寫進 更新紀錄.txt
+VERSION = "0.1.33"  # 每次更新請遞增最後一碼，並寫進 更新紀錄.txt
 
 CJK = r"一-鿿"
 CJK_RE = re.compile(f"[{CJK}]")
@@ -466,6 +466,9 @@ def _cut_logit(T, i):
     return x
 
 
+_SEG_MU, _SEG_SIG = 9.0, 4.0     # 偏好的每句字數（平均）與寬容度
+
+
 def _dp_segments(chars, cjkw, max_dur):
     """在一整句內，用『斷開機率＋長度偏好（約 10 字）』的動態規劃一次決定所有斷點。回傳 [(char起, char迄)]。"""
     T = _tokenize(chars)
@@ -510,7 +513,7 @@ def _dp_segments(chars, cjkw, max_dur):
     best = [-1e18] * (n + 1)
     bk = [0] * (n + 1)
     best[0] = 0.0
-    mu, sig = 10.0, 4.0
+    mu, sig = _SEG_MU, _SEG_SIG
     for j in range(1, n + 1):
         for i in range(j - 1, -1, -1):
             ln = cum[j] - cum[i]
@@ -594,6 +597,7 @@ def build_cues(chars, maxw=30, max_dur=6.5, gap=0.3, lines=1, cjkw=15, cjk_dur=3
                 flush()                              # 不在詞中間換句
             group.append(cl)
         flush()
+    cues = _merge_pause_pieces(cues, cjkw)
     if offset:                                  # 整體延後（Whisper 時間戳通常偏早）
         for c in cues:
             c["start"] += offset
@@ -607,6 +611,30 @@ def build_cues(chars, maxw=30, max_dur=6.5, gap=0.3, lines=1, cjkw=15, cjk_dur=3
         if c["end"] <= c["start"]:
             c["end"] = c["start"] + 0.3
     return cues
+
+
+def _merge_pause_pieces(cues, cjkw, gap=0.6, short=4, total=12):
+    """使用者習慣：短短一句＋小停頓＋另一短句，合成同一行並用半形空格隔開（例：「不難 真的很強」「哇 10隻金怪」）。
+    依 YouTube CC 統計：約 5% 的字幕行是這樣，九成是兩段、其中一段 ≤4 字、整行 ≤12 字。"""
+    if not cues:
+        return cues
+    def n(t):
+        return len(re.sub(r"\s", "", t))
+    out = [dict(cues[0])]
+    for c in cues[1:]:
+        a = out[-1]
+        ta, tb = a["text"], c["text"]
+        ok = (c["start"] - a["end"] <= gap and _has_cjk(ta) and _has_cjk(tb)
+              and " " not in ta and " " not in tb
+              and min(n(ta), n(tb)) <= short and n(ta) + n(tb) <= min(total, cjkw)
+              and not re.search(r"[A-Za-z0-9%]$", ta))
+        if ok:
+            a["text"] = ta + " " + tb
+            a["end"] = c["end"]
+            a["conf"] = min(a.get("conf", 1.0), c.get("conf", 1.0))
+        else:
+            out.append(dict(c))
+    return out
 
 
 # ───────────────────────── 輸出 ─────────────────────────
