@@ -28,7 +28,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-VERSION = "0.1.34"  # 每次更新請遞增最後一碼，並寫進 更新紀錄.txt
+VERSION = "0.1.35"  # 每次更新請遞增最後一碼，並寫進 更新紀錄.txt
 
 CJK = r"一-鿿"
 CJK_RE = re.compile(f"[{CJK}]")
@@ -466,7 +466,8 @@ def _cut_logit(T, i):
     return x
 
 
-_SEG_MU, _SEG_SIG = 10.0, 5.0    # 偏好的每句字數（平均）與寬容度
+_SEG_MU, _SEG_SIG = 10.0, 5.0
+_PAUSE_W, _PAUSE_CAP = 4.0, 0.6     # 停頓加成：每秒加多少、最多算到幾秒    # 偏好的每句字數（平均）與寬容度
 
 
 def _dp_segments(chars, cjkw, max_dur):
@@ -483,7 +484,7 @@ def _dp_segments(chars, cjkw, max_dur):
     for i in range(1, n):
         x = _cut_logit(T, i)
         gt = chars[T[i][2]][1] - chars[T[i - 1][3]][2]
-        x += min(max(gt, 0.0), 0.6) * 4                                     # 停頓越久越該斷
+        x += min(max(gt, 0.0), _PAUSE_CAP) * _PAUSE_W                       # 停頓越久越該斷
         if any(chars[k][0] in ALL_PUNCT for k in range(T[i - 1][3] + 1, T[i][2])):
             x += 1.0                                                        # 原文有標點
         if T[i - 1][0] == "#" and _is_cjk(T[i][1][:1]):
